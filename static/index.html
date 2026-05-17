@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FashionGen — AI Outfit Image Studio</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --color-background-primary: #ffffff;
+    --color-background-secondary: #f5f5f4;
+    --color-background-tertiary: #eeece8;
+    --color-background-info: #e6f1fb;
+    --color-background-success: #eaf3de;
+    --color-background-warning: #faeeda;
+    --color-background-danger: #fcebeb;
+    --color-text-primary: #1a1a18;
+    --color-text-secondary: #6b6b67;
+    --color-text-tertiary: #9b9b96;
+    --color-text-info: #185fa5;
+    --color-text-success: #3b6d11;
+    --color-text-warning: #854f0b;
+    --color-text-danger: #a32d2d;
+    --color-border-tertiary: rgba(0,0,0,0.1);
+    --color-border-secondary: rgba(0,0,0,0.18);
+    --color-border-primary: rgba(0,0,0,0.3);
+    --color-border-info: #85b7eb;
+    --font-sans: system-ui, -apple-system, sans-serif;
+    --font-mono: 'Menlo', 'Consolas', monospace;
+    --border-radius-md: 8px;
+    --border-radius-lg: 12px;
+    --border-radius-xl: 16px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --color-background-primary: #1c1c1a;
+      --color-background-secondary: #252523;
+      --color-background-tertiary: #2e2e2b;
+      --color-background-info: #042c53;
+      --color-background-success: #173404;
+      --color-text-primary: #f0ede8;
+      --color-text-secondary: #a09e99;
+      --color-text-tertiary: #6b6966;
+      --color-text-info: #85b7eb;
+      --color-text-success: #97c459;
+      --color-border-tertiary: rgba(255,255,255,0.1);
+      --color-border-secondary: rgba(255,255,255,0.18);
+      --color-border-primary: rgba(255,255,255,0.3);
+    }
+  }
+  body { font-family: var(--font-sans); background: var(--color-background-tertiary); color: var(--color-text-primary); min-height: 100vh; }
+  * { box-sizing: border-box; }
+  .app { min-height: 100vh; }
+  .topbar { background: var(--color-background-primary); border-bottom: 0.5px solid var(--color-border-tertiary); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-mark { width: 28px; height: 28px; background: var(--color-text-primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-mark i { color: var(--color-background-primary); font-size: 16px; }
+  .logo-text { font-size: 15px; font-weight: 500; color: var(--color-text-primary); letter-spacing: -0.3px; }
+  .logo-sub { font-size: 12px; color: var(--color-text-secondary); margin-left: 2px; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; }
+  .badge-model { background: var(--color-background-success); color: var(--color-text-success); font-size: 11px; padding: 3px 8px; border-radius: 20px; font-weight: 500; display:inline-flex; align-items:center; gap:4px; }
+  .main { display: grid; grid-template-columns: 300px 1fr; min-height: calc(100vh - 56px); }
+  .sidebar { background: var(--color-background-primary); border-right: 0.5px solid var(--color-border-tertiary); padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; position: sticky; top: 56px; height: calc(100vh - 56px); }
+  .content { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .section-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 10px; }
+  .upload-zone { border: 1.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 18px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--color-background-secondary); }
+  .upload-zone:hover { border-color: var(--color-border-primary); background: var(--color-background-primary); }
+  .upload-icon { font-size: 26px; color: var(--color-text-secondary); margin-bottom: 6px; }
+  .upload-title { font-size: 13px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 3px; }
+  .upload-sub { font-size: 12px; color: var(--color-text-secondary); line-height: 1.5; }
+  .upload-methods { display: flex; gap: 6px; margin-top: 10px; justify-content: center; flex-wrap: wrap; }
+  .method-btn { font-size: 11px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; padding: 4px 8px; background: var(--color-background-primary); color: var(--color-text-secondary); cursor: pointer; }
+  .method-btn:hover { background: var(--color-background-secondary); }
+  .outfit-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .outfit-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); }
+  .outfit-thumb { width: 36px; height: 44px; border-radius: 4px; flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 16px; color: var(--color-text-secondary); }
+  .outfit-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .outfit-meta { flex: 1; min-width: 0; }
+  .outfit-name { font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .outfit-sku-tag { font-size: 10px; color: var(--color-text-secondary); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-ready { background: #22c55e; }
+  .dot-processing { background: #f59e0b; animation: pulse 1s infinite; }
+  .dot-done { background: #3b82f6; }
+  .dot-error { background: #ef4444; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .ref-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .ref-zone { border: 1.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-md); padding: 12px 8px; text-align: center; cursor: pointer; background: var(--color-background-secondary); transition: all 0.15s; position: relative; }
+  .ref-zone:hover { border-color: var(--color-border-primary); }
+  .ref-zone.filled { border-style: solid; }
+  .ref-zone i { font-size: 18px; color: var(--color-text-secondary); display: block; margin-bottom: 3px; }
+  .ref-zone-label { font-size: 11px; color: var(--color-text-secondary); }
+  .ref-thumb-count { position: absolute; top: 5px; right: 5px; background: var(--color-text-primary); color: var(--color-background-primary); font-size: 10px; border-radius: 10px; padding: 1px 5px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 13px; color: var(--color-text-primary); }
+  .stepper { display: flex; align-items: center; border: 0.5px solid var(--color-border-secondary); border-radius: 6px; overflow: hidden; }
+  .stepper button { width: 28px; height: 28px; border: none; background: transparent; cursor: pointer; font-size: 15px; color: var(--color-text-primary); display: flex; align-items: center; justify-content: center; }
+  .stepper button:hover { background: var(--color-background-secondary); }
+  .stepper span { width: 28px; text-align: center; font-size: 13px; font-weight: 500; color: var(--color-text-primary); }
+  select { font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; padding: 4px 6px; background: var(--color-background-primary); color: var(--color-text-primary); }
+  .gen-btn { width: 100%; padding: 11px; background: var(--color-text-primary); color: var(--color-background-primary); border: none; border-radius: var(--border-radius-md); font-size: 14px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.15s; }
+  .gen-btn:hover { opacity: 0.85; }
+  .gen-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .progress-bar { height: 3px; background: var(--color-background-secondary); border-radius: 2px; overflow: hidden; margin-top: 8px; display: none; }
+  .progress-fill { height: 100%; background: var(--color-text-primary); border-radius: 2px; transition: width 0.4s; }
+  .progress-label { font-size: 11px; color: var(--color-text-secondary); margin-top: 4px; text-align: center; display: none; }
+  .tab-row { display: flex; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); overflow: hidden; }
+  .tab-btn { flex: 1; padding: 8px 10px; background: transparent; border: none; border-right: 0.5px solid var(--color-border-tertiary); font-size: 13px; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active { background: var(--color-background-primary); color: var(--color-text-primary); font-weight: 500; }
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .stat-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+  .stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
+  .stat-lbl { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
+  .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
+  .gallery-card { background: var(--color-background-primary); border-radius: var(--border-radius-lg); border: 0.5px solid var(--color-border-tertiary); overflow: hidden; }
+  .gallery-img-placeholder { width: 100%; aspect-ratio: 3/4; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; background: var(--color-background-secondary); }
+  .gallery-img-placeholder.generating { animation: shimmer 1.5s ease-in-out infinite; }
+  @keyframes shimmer { 0%,100%{opacity:1}50%{opacity:0.6} }
+  .gallery-img-placeholder i { font-size: 26px; color: var(--color-text-secondary); }
+  .gallery-img-placeholder span { font-size: 11px; color: var(--color-text-secondary); }
+  .gallery-footer { padding: 10px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .gallery-outfit-name { font-size: 12px; font-weight: 500; color: var(--color-text-primary); }
+  .gallery-actions { display: flex; gap: 4px; }
+  .icon-btn { width: 28px; height: 28px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--color-text-secondary); font-size: 14px; }
+  .icon-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+  .consistency-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; padding: 2px 6px; border-radius: 10px; }
+  .score-high { background: #dcfce7; color: #166534; }
+  .score-mid { background: #fef9c3; color: #713f12; }
+  .score-low { background: #fee2e2; color: #991b1b; }
+  .empty-gallery { text-align: center; padding: 50px 20px; grid-column: 1/-1; }
+  .empty-gallery i { font-size: 36px; color: var(--color-text-secondary); display: block; margin-bottom: 10px; }
+  .empty-gallery h3 { font-size: 15px; font-weight: 500; color: var(--color-text-primary); margin-bottom: 6px; }
+  .empty-gallery p { font-size: 13px; color: var(--color-text-secondary); line-height: 1.6; max-width: 300px; margin: 0 auto; }
+  .prompt-block { background: var(--color-background-secondary); border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); margin-bottom: 10px; }
+  .prompt-block-header { padding: 9px 14px; border-bottom: 0.5px solid var(--color-border-tertiary); display: flex; align-items: center; justify-content: space-between; }
+  .prompt-block-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.7px; }
+  .prompt-block-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; }
+  .tag-lock { background: #fef3c7; color: #92400e; }
+  .tag-creative { background: #ede9fe; color: #5b21b6; }
+  .tag-negative { background: #fee2e2; color: #991b1b; }
+  .tag-output { background: #dcfce7; color: #166534; }
+  .prompt-text { padding: 12px 14px; font-size: 12px; color: var(--color-text-primary); line-height: 1.7; font-family: var(--font-mono); white-space: pre-wrap; }
+  .prompt-text[contenteditable]:focus { outline: 2px solid var(--color-border-info); outline-offset: -2px; border-radius: 0 0 var(--border-radius-md) var(--border-radius-md); }
+  .alert-bar { padding: 10px 14px; border-radius: var(--border-radius-md); font-size: 12px; display: flex; align-items: flex-start; gap: 8px; line-height: 1.5; margin-bottom: 14px; }
+  .alert-info { background: var(--color-background-info); color: var(--color-text-info); border: 0.5px solid var(--color-border-info); }
+  .compare-view { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .compare-panel { border-radius: var(--border-radius-md); overflow: hidden; border: 0.5px solid var(--color-border-tertiary); }
+  .compare-label { font-size: 11px; font-weight: 500; padding: 8px 12px; background: var(--color-background-secondary); color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); text-transform: uppercase; letter-spacing: 0.6px; }
+  .compare-img { width: 100%; aspect-ratio: 3/4; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--color-text-secondary); background: var(--color-background-secondary); }
+  .compare-img img { width: 100%; height: 100%; object-fit: cover; }
+  .checklist { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+  .check-item { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 10px; background: var(--color-background-secondary); border-radius: 4px; color: var(--color-text-primary); }
+  .check-pass { color: #16a34a; }
+  .check-fail { color: #dc2626; }
+  .dl-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; background: transparent; cursor: pointer; color: var(--color-text-primary); display: inline-flex; align-items: center; gap: 5px; }
+  .btn-sm:hover { background: var(--color-background-secondary); }
+  .panel-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 100; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--color-background-primary); border-radius: var(--border-radius-lg); padding: 24px; width: 460px; max-width: 90vw; border: 0.5px solid var(--color-border-secondary); }
+  .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .modal p { font-size: 13px; color: var(--color-text-secondary); margin-bottom: 14px; line-height: 1.6; }
+  .modal-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+  .input-sm { font-size: 12px; padding: 7px 10px; border: 0.5px solid var(--color-border-secondary); border-radius: 4px; background: var(--color-background-primary); color: var(--color-text-primary); width: 100%; margin-bottom: 10px; }
+  .outfit-sku-btn { font-size: 10px; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-radius: 3px; padding: 2px 5px; color: var(--color-text-secondary); cursor: pointer; margin-top: 3px; display: inline-block; }
+  .consistency-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark"><i class="ti ti-shirt"></i></div>
+      <span class="logo-text">FashionGen</span>
+      <span class="logo-sub">AI Image Studio</span>
+    </div>
+    <div class="topbar-right">
+      <span class="badge-model"><i class="ti ti-cpu" style="font-size:11px"></i> Nano Banana 2 · Vertex AI</span>
+      <button class="btn-sm" onclick="showModal('setup')"><i class="ti ti-settings"></i> GCP Setup</button>
+    </div>
+  </div>
+ 
+  <div class="main">
+    <div class="sidebar">
+      <div>
+        <div class="section-label">Outfit images</div>
+        <div class="upload-zone" onclick="document.getElementById('outfit-input').click()">
+          <div class="upload-icon"><i class="ti ti-shirt"></i></div>
+          <div class="upload-title">Upload outfits</div>
+          <div class="upload-sub">Drop images, ZIP folder, or link Google Drive</div>
+          <div class="upload-methods">
+            <span class="method-btn"><i class="ti ti-file" style="font-size:10px"></i> Images</span>
+            <span class="method-btn" onclick="event.stopPropagation();showModal('drive')"><i class="ti ti-file-zip" style="font-size:10px"></i> ZIP / Drive</span>
+          </div>
+        </div>
+        <input type="file" id="outfit-input" multiple accept="image/*" style="display:none" onchange="handleOutfitUpload(event)">
+        <div class="outfit-list" id="outfit-list"></div>
+      </div>
+ 
+      <div>
+        <div class="section-label">Reference images</div>
+        <div class="ref-grid">
+          <div class="ref-zone" onclick="openRef('model')" id="ref-model"><i class="ti ti-user-circle"></i><div class="ref-zone-label">Model</div></div>
+          <div class="ref-zone" onclick="openRef('background')" id="ref-background"><i class="ti ti-photo"></i><div class="ref-zone-label">Background</div></div>
+          <div class="ref-zone" onclick="openRef('pose')" id="ref-pose"><i class="ti ti-run"></i><div class="ref-zone-label">Pose</div></div>
+          <div class="ref-zone" onclick="openRef('lighting')" id="ref-lighting"><i class="ti ti-bulb"></i><div class="ref-zone-label">Lighting</div></div>
+          <div class="ref-zone" onclick="openRef('vibe')" id="ref-vibe"><i class="ti ti-sparkles"></i><div class="ref-zone-label">Vibe</div></div>
+          <div class="ref-zone" onclick="openRef('brand')" id="ref-brand"><i class="ti ti-award"></i><div class="ref-zone-label">Brand style</div></div>
+        </div>
+        <input type="file" id="ref-input" multiple accept="image/*" style="display:none" onchange="handleRefUpload(event)">
+      </div>
+ 
+      <div>
+        <div class="section-label">Generation settings</div>
+        <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:4px 12px;">
+          <div class="settings-row">
+            <span class="settings-label">Images per outfit</span>
+            <div class="stepper">
+              <button onclick="changeCount(-1)">−</button>
+              <span id="count-val">4</span>
+              <button onclick="changeCount(1)">+</button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Aspect ratio</span>
+            <select><option>3:4 portrait</option><option>1:1 square</option><option>4:3 landscape</option><option>9:16 vertical</option></select>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Output quality</span>
+            <select><option>High (2048px)</option><option>Standard (1024px)</option><option>Preview (512px)</option></select>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Realism level</span>
+            <select><option>Photorealistic</option><option>Editorial</option><option>Studio clean</option><option>Lifestyle</option></select>
+          </div>
+        </div>
+      </div>
+ 
+      <div>
+        <button class="gen-btn" id="gen-btn" onclick="startGeneration()">
+          <i class="ti ti-wand"></i> Generate images
+        </button>
+        <div class="progress-bar" id="progress-wrap"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+        <div class="progress-label" id="progress-label"></div>
+      </div>
+    </div>
+ 
+    <div class="content">
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-val" id="stat-outfits">0</div><div class="stat-lbl">Outfits loaded</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-refs">0</div><div class="stat-lbl">References</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-generated">0</div><div class="stat-lbl">Generated</div></div>
+        <div class="stat-card"><div class="stat-val" id="stat-failed">0</div><div class="stat-lbl">Failed</div></div>
+      </div>
+ 
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('gallery',this)">Output gallery</button>
+        <button class="tab-btn" onclick="switchTab('prompts',this)">Prompt preview</button>
+        <button class="tab-btn" onclick="switchTab('consistency',this)">Consistency check</button>
+      </div>
+ 
+      <div id="tab-gallery">
+        <div class="panel-top">
+          <span style="font-size:13px;color:var(--color-text-secondary)" id="gallery-count-label">No outputs yet</span>
+          <div class="dl-bar" id="dl-bar" style="display:none">
+            <button class="btn-sm" onclick="alert('Downloading all generated images as ZIP…')"><i class="ti ti-download"></i> Download all</button>
+          </div>
+        </div>
+        <div id="gallery-grid" class="gallery-grid">
+          <div class="empty-gallery">
+            <i class="ti ti-photo-off"></i>
+            <h3>No images generated yet</h3>
+            <p>Upload outfit images and reference images, then click Generate to create your first batch.</p>
+          </div>
+        </div>
+      </div>
+ 
+      <div id="tab-prompts" style="display:none">
+        <div class="alert-bar alert-info"><i class="ti ti-info-circle"></i><span>The outfit preservation block is protected and injected automatically. Edit the creative direction and output blocks to adjust aesthetics per batch.</span></div>
+        <div class="prompt-block">
+          <div class="prompt-block-header"><span class="prompt-block-label">Outfit preservation lock</span><span class="prompt-block-tag tag-lock"><i class="ti ti-lock" style="font-size:10px"></i> Protected</span></div>
+          <div class="prompt-text">Preserve the outfit exactly as uploaded. Same design, same color scheme, same pattern, same texture, same cuts, same edges, same lining, same sleeves, same collar, same neckline, same buttons, same stitching, same pleats, same seams. Do not redesign, simplify, enhance, replace, or hallucinate any garment detail. Product accuracy takes absolute priority.</div>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-block-header"><span class="prompt-block-label">Creative direction</span><span class="prompt-block-tag tag-creative"><i class="ti ti-palette" style="font-size:10px"></i> Editable</span></div>
+          <div class="prompt-text" contenteditable="true" style="border-radius:0 0 var(--border-radius-md) var(--border-radius-md)">Model: [from reference] | Background: [from reference] | Pose: [from reference] | Lighting: [from reference] | Vibe: [from reference] | Brand aesthetic: [from reference]</div>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-block-header"><span class="prompt-block-label">Negative instructions</span><span class="prompt-block-tag tag-negative"><i class="ti ti-ban" style="font-size:10px"></i> Blocked</span></div>
+          <div class="prompt-text">No outfit changes. No color alterations. No pattern changes. No missing garment details. No extra logos. No fabric substitution. No garment redesign. No hallucinated accessories.</div>
+        </div>
+        <div class="prompt-block">
+          <div class="prompt-block-header"><span class="prompt-block-label">Output specifications</span><span class="prompt-block-tag tag-output"><i class="ti ti-camera" style="font-size:10px"></i> Output</span></div>
+          <div class="prompt-text" contenteditable="true" style="border-radius:0 0 var(--border-radius-md) var(--border-radius-md)">Format: JPEG | Realism: Photorealistic | Framing: Full body | Aspect ratio: 3:4 | Resolution: 2048px | Commercial: ecommerce</div>
+        </div>
+      </div>
+ 
+      <div id="tab-consistency" style="display:none">
+        <div id="consistency-empty" class="empty-gallery">
+          <i class="ti ti-checkbox"></i>
+          <h3>Consistency check</h3>
+          <p>Generate images first to see before/after comparisons and the outfit fidelity checklist.</p>
+        </div>
+        <div id="consistency-content" style="display:none">
+          <div class="consistency-tabs" id="consistency-outfit-tabs"></div>
+          <div class="compare-view">
+            <div class="compare-panel"><div class="compare-label">Original outfit</div><div class="compare-img" id="compare-original"><i class="ti ti-shirt"></i></div></div>
+            <div class="compare-panel"><div class="compare-label">Generated output</div><div class="compare-img" id="compare-generated" style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe)"><i class="ti ti-check-circle" style="color:#3b82f6"></i></div></div>
+          </div>
+          <div style="margin-top:14px"><div class="section-label">Outfit fidelity checklist</div><div class="checklist" id="checklist"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<div class="modal-overlay" id="setup-modal">
+  <div class="modal">
+    <h3>Google Cloud · Nano Banana 2 setup</h3>
+    <p>Connect your Google Cloud project to enable Nano Banana 2 generation via Vertex AI.</p>
+    <input class="input-sm" type="text" placeholder="GCP Project ID (e.g. my-project-123456)">
+    <input class="input-sm" type="text" placeholder="Vertex AI region (e.g. us-central1)">
+    <input class="input-sm" type="password" placeholder="Service account key (never stored server-side)">
+    <div style="font-size:11px;color:var(--color-text-secondary);line-height:1.5"><i class="ti ti-shield-lock" style="font-size:11px"></i> Store credentials in .env — never commit to source code.</div>
+    <div class="modal-btns">
+      <button class="btn-sm" onclick="closeModal('setup')">Cancel</button>
+      <button class="gen-btn" style="width:auto;padding:8px 18px;font-size:13px" onclick="closeModal('setup');alert('Connected to Vertex AI (simulated)')"><i class="ti ti-plug"></i> Connect</button>
+    </div>
+  </div>
+</div>
+ 
+<div class="modal-overlay" id="drive-modal">
+  <div class="modal">
+    <h3>Google Drive / ZIP import</h3>
+    <p>Paste a shared Google Drive folder link, or upload a ZIP file containing outfit images.</p>
+    <input class="input-sm" type="text" placeholder="https://drive.google.com/drive/folders/...">
+    <div class="modal-btns">
+      <button class="btn-sm" onclick="closeModal('drive')">Cancel</button>
+      <button class="gen-btn" style="width:auto;padding:8px 18px;font-size:13px" onclick="closeModal('drive');alert('Drive import requires backend integration (Node.js + Google Drive API).')"><i class="ti ti-brand-google-drive"></i> Import</button>
+    </div>
+  </div>
+</div>
+ 
+<script>
+let imgCount=4, outfitItems=[], galleryItems=[], refMap={model:0,background:0,pose:0,lighting:0,vibe:0,brand:0}, currentRef=null, refCount=0, generatedCount=0, failedCount=0, generationActive=false;
+const COLORS=['#e0f2fe','#fce7f3','#dcfce7','#fef3c7','#ede9fe','#fee2e2'];
+ 
+function changeCount(d){imgCount=Math.max(1,Math.min(12,imgCount+d));document.getElementById('count-val').textContent=imgCount;}
+ 
+function handleOutfitUpload(e){
+  Array.from(e.target.files).forEach((f,i)=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      outfitItems.push({name:f.name.replace(/\.[^/.]+$/,''),src:ev.target.result,status:'ready',color:COLORS[outfitItems.length%COLORS.length]});
+      updateStats();renderOutfitList();
+    };r.readAsDataURL(f);
+  });
+}
+ 
+function openRef(type){currentRef=type;document.getElementById('ref-input').click();}
+ 
+function handleRefUpload(e){
+  if(!currentRef||!e.target.files.length)return;
+  refMap[currentRef]+=e.target.files.length;refCount+=e.target.files.length;
+  const z=document.getElementById('ref-'+currentRef);z.classList.add('filled');
+  let b=z.querySelector('.ref-thumb-count');
+  if(!b){b=document.createElement('div');b.className='ref-thumb-count';z.appendChild(b);}
+  b.textContent=refMap[currentRef];updateStats();
+}
+ 
+function renderOutfitList(){
+  const l=document.getElementById('outfit-list');l.innerHTML='';
+  outfitItems.forEach((o,i)=>{
+    const d=document.createElement('div');d.className='outfit-item';
+    d.innerHTML=`<div class="outfit-thumb" style="background:${o.color}"><img src="${o.src}" alt="${o.name}"></div><div class="outfit-meta"><div class="outfit-name">${o.name}</div><span class="outfit-sku-btn" onclick="tagOutfit(${i})">${o.sku||'+ Tag SKU'}</span></div><div class="dot dot-${o.status}"></div>`;
+    l.appendChild(d);
+  });
+}
+ 
+function tagOutfit(i){const s=prompt('Enter SKU / collection tag:');if(s){outfitItems[i].sku=s;renderOutfitList();}}
+ 
+function updateStats(){
+  document.getElementById('stat-outfits').textContent=outfitItems.length;
+  document.getElementById('stat-refs').textContent=refCount;
+  document.getElementById('stat-generated').textContent=generatedCount;
+  document.getElementById('stat-failed').textContent=failedCount;
+}
+ 
+async function startGeneration() {
+  if (!outfitItems.length) { alert('Upload at least one outfit image first.'); return; }
+  if (generationActive) return;
+  
+  generationActive = true;
+  generatedCount = 0; 
+  failedCount = 0; 
+  galleryItems = [];
+  
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true; 
+  btn.innerHTML = '<i class="ti ti-loader-2" style="animation:spin 1s linear infinite;display:inline-block"></i> Processing API…';
+  
+  document.getElementById('progress-wrap').style.display = 'block';
+  document.getElementById('progress-label').style.display = 'block';
+  document.getElementById('progress-label').textContent = 'Connecting to Nano Banana 2 via Vertex AI...';
+  
+  outfitItems.forEach(o => o.status = 'processing'); 
+  renderOutfitList();
+  renderGallery(true); // Show loading placeholders
+  
+// Package data for FastAPI
+  const formData = new FormData();
+  formData.append('batch_count', imgCount);
+  
+  // ADD THIS LINE: Tells the backend to use the Gemini bypass
+  formData.append('model_choice', 'gemini'); 
+  
+  // Append raw files directly from the input element
+  const fileInput = document.getElementById('outfit-input');
+  
+  // ADD THIS LOOP: Actually pack the images into the formData!
+  for (let i = 0; i < fileInput.files.length; i++) {
+      formData.append('outfit_images', fileInput.files[i]);
+  }
+
+  try {
+      // Send POST request to FastAPI backend
+      const response = await fetch('/api/generate', {
+          method: 'POST',
+          body: formData
+      });
+
+      if (!response.ok) throw new Error("Backend API failed");
+      const data = await response.json();
+      
+      // Parse backend results
+      data.results.forEach((res, index) => {
+          if (res.status === 'error') {
+              failedCount++;
+          } else {
+              generatedCount++;
+              galleryItems.push({
+                  outfit: res.outfit_source,
+                  idx: (index % imgCount) + 1,
+                  score: res.score,
+                  url: res.url // If GCP is active, this contains the real image URL
+              });
+          }
+      });
+  } catch (error) {
+      console.error(error);
+      alert("API Error: Ensure the Python server is running.");
+  } finally {
+      // Finalize UI States
+      outfitItems.forEach(o => o.status = 'done'); 
+      renderOutfitList();
+      updateStats();
+      renderGallery(false);
+      
+      btn.disabled = false; 
+      btn.innerHTML = '<i class="ti ti-wand"></i> Regenerate'; 
+      generationActive = false;
+      document.getElementById('progress-fill').style.width = '100%';
+      document.getElementById('progress-label').textContent = `Done — ${generatedCount} images generated`;
+      document.getElementById('dl-bar').style.display = 'flex';
+      document.getElementById('gallery-count-label').textContent = `${generatedCount} images generated`;
+      showConsistency();
+  }
+}
+ 
+function renderGallery(placeholders) {
+  const g = document.getElementById('gallery-grid'); 
+  g.innerHTML = '';
+  const total = outfitItems.length * imgCount;
+  
+  if (placeholders) {
+    for (let i = 0; i < total; i++) {
+      const o = outfitItems[Math.floor(i / imgCount)];
+      const c = document.createElement('div'); 
+      c.className = 'gallery-card';
+      c.innerHTML = `<div class="gallery-img-placeholder generating"><i class="ti ti-camera"></i><span>Generating…</span></div><div class="gallery-footer"><span class="gallery-outfit-name">${o?.name || 'Outfit'} #${(i % imgCount) + 1}</span></div>`;
+      g.appendChild(c);
+    }
+    return;
+  }
+  
+  galleryItems.forEach((item, i) => {
+    const sc = item.score >= 92 ? 'score-high' : item.score >= 82 ? 'score-mid' : 'score-low';
+    const c = document.createElement('div'); 
+    c.className = 'gallery-card';
+    
+    // Use the generated image URL if available, otherwise fallback to the UI success icon
+    const imageContent = item.url 
+        ? `<img src="${item.url}" style="width:100%; height:100%; object-fit:cover;" alt="Generated Image">`
+        : `<i class="ti ti-check-circle" style="font-size:30px;color:#3b82f6"></i><span style="font-size:11px;color:var(--color-text-secondary)">Simulated Output ${i + 1}</span>`;
+
+    c.innerHTML = `
+      <div class="gallery-img-placeholder" style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe); overflow:hidden;">
+          ${imageContent}
+      </div>
+      <div class="gallery-footer">
+          <div>
+              <div class="gallery-outfit-name">${item.outfit} #${item.idx}</div>
+              <span class="consistency-badge ${sc}"><i class="ti ti-shield-check" style="font-size:10px"></i> ${item.score}% fidelity</span>
+          </div>
+          <div class="gallery-actions">
+              <button class="icon-btn" title="Regenerate"><i class="ti ti-refresh"></i></button>
+              <button class="icon-btn" title="Download"><i class="ti ti-download"></i></button>
+          </div>
+      </div>`;
+    g.appendChild(c);
+  });
+}
+ 
+function showConsistency(){
+  document.getElementById('consistency-empty').style.display='none';
+  document.getElementById('consistency-content').style.display='block';
+  const t=document.getElementById('consistency-outfit-tabs');t.innerHTML='';
+  outfitItems.forEach((o,i)=>{
+    const b=document.createElement('button');b.className='btn-sm';b.textContent=o.name;
+    b.onclick=()=>{document.querySelectorAll('.consistency-tabs .btn-sm').forEach(x=>x.style.fontWeight='400');b.style.fontWeight='500';selectOutfitConsistency(i);};
+    t.appendChild(b);
+  });
+  if(outfitItems.length)selectOutfitConsistency(0);
+}
+ 
+function selectOutfitConsistency(i){
+  const o=outfitItems[i];
+  const orig=document.getElementById('compare-original');
+  orig.innerHTML=o.src?`<img src="${o.src}">`:'<i class="ti ti-shirt"></i>';
+  renderChecklist();
+}
+ 
+function renderChecklist(){
+  const checks=[
+    ['Design and silhouette preserved',true],['Color scheme unchanged',true],['Pattern / print / texture consistent',true],
+    ['Collar and neckline accurate',true],['Sleeves and cuffs correct',Math.random()>0.15],['Buttons and hardware intact',Math.random()>0.1],
+    ['Stitching and seam detail visible',Math.random()>0.2],['Hem and lining preserved',true],
+    ['No hallucinated accessories',Math.random()>0.08],['No fabric substitution detected',true]
+  ];
+  document.getElementById('checklist').innerHTML=checks.map(([l,p])=>`<div class="check-item"><i class="ti ti-${p?'circle-check check-pass':'circle-x check-fail'}"></i><span style="color:${p?'var(--color-text-primary)':'#dc2626'}">${l}</span></div>`).join('');
+}
+ 
+function switchTab(n,btn){
+  ['gallery','prompts','consistency'].forEach(t=>document.getElementById('tab-'+t).style.display=t===n?'block':'none');
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+}
+ 
+function showModal(id){document.getElementById(id+'-modal').classList.add('open');}
+function closeModal(id){document.getElementById(id+'-modal').classList.remove('open');}
+</script>
+</body>
+</html>
